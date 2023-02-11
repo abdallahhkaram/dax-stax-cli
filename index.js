@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import chalk from 'chalk';
+import chalkAnimation from 'chalk-animation';
 import figlet from 'figlet';
 import gradient from 'gradient-string';
 import inquirer from 'inquirer';
@@ -14,6 +15,26 @@ const __filename = fileURLToPath(import.meta.url);
 const distPath = path.dirname(__filename);
 const PKG_ROOT = path.join(distPath, './');
 const srcDir = path.join(PKG_ROOT, 'template');
+
+const validationRegExp =
+	/^(?:@[a-z0-9-*~][a-z0-9-*._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/;
+
+const validateAppName = (input) => {
+	const paths = input.split('/');
+
+	const indexOfDelimiter = paths.findIndex((p) => p.startsWith('@'));
+
+	let appName = paths[paths.length - 1];
+	if (paths.findIndex((p) => p.startsWith('@')) !== -1) {
+		appName = paths.slice(indexOfDelimiter).join('/');
+	}
+
+	if (input === '.' || validationRegExp.test(appName ?? '')) {
+		return true;
+	} else {
+		return "App name must consist of only lowercase alphanumeric characters, '-', and '_'";
+	}
+};
 
 let projectDir;
 let projectName;
@@ -46,7 +67,8 @@ async function askStack() {
 			name: 'step_1',
 			type: 'input',
 			default: 'app',
-			message: 'What is your project name',
+			message: 'What is your project name:  ',
+			validate: validateAppName,
 		})
 		.then((value) => {
 			projectName = value.step_1;
@@ -62,7 +84,7 @@ async function askStack() {
 			name: 'step_2',
 			type: 'input',
 			default: '.',
-			message: 'What is your project directory',
+			message: 'What is your project directory:  ',
 		})
 		.then((value) => {
 			projectDir = value.step_2;
@@ -78,7 +100,7 @@ async function askStack() {
 		.prompt({
 			name: 'description',
 			type: 'input',
-			message: 'What is your project description',
+			message: 'What is your project description: ',
 		})
 		.then((value) => {
 			description = value.description;
@@ -94,7 +116,7 @@ async function askStack() {
 			name: 'version',
 			type: 'input',
 			default: '1.0.0',
-			message: 'What is your project version?',
+			message: 'What is your project version:  ',
 		})
 		.then((value) => {
 			version = value.version;
@@ -109,7 +131,7 @@ async function askStack() {
 		.prompt({
 			name: 'keywords',
 			type: 'input',
-			message: 'What is your project keywords? (separate them with spaces)',
+			message: 'What is your project keywords (separate them with spaces):  ',
 		})
 		.then((value) => {
 			keywords = value.keywords;
@@ -125,7 +147,7 @@ async function askStack() {
 			name: 'license',
 			type: 'input',
 			default: 'MIT',
-			message: 'What is your project license?',
+			message: 'What is your project license:  ',
 		})
 		.then((value) => {
 			license = value.license;
@@ -141,7 +163,7 @@ async function askStack() {
 		.prompt({
 			name: 'initGit',
 			type: 'confirm',
-			message: 'Do you want to initialize git?',
+			message: 'Do you want to initialize git:  ',
 		})
 		.then(async (value) => {
 			initGit = value.initGit;
@@ -156,7 +178,7 @@ async function askStack() {
 		.prompt({
 			name: 'installDeps',
 			type: 'confirm',
-			message: 'Do you want to install the dependencies?',
+			message: 'Do you want to install the dependencies:  ',
 		})
 		.then((value) => {
 			installDeps = value.installDeps;
@@ -173,7 +195,7 @@ async function askStack() {
 			.prompt({
 				name: 'setPackageManager',
 				type: 'list',
-				message: 'What is your preferred package manager',
+				message: 'What is your preferred package manager:  ',
 				choices: ['npm', 'yarn', 'pnpm'],
 			})
 			.then((value) => {
@@ -256,7 +278,7 @@ const scaffoldProject = async () => {
 				spinner.info(
 					`Emptying ${chalk.cyan.bold(
 						projectName
-					)} and creating t3 app..\n`
+					)} and creating dax-stax app..\n`
 				);
 				fs.emptyDirSync(dir);
 			}
@@ -347,12 +369,10 @@ const runInstallCommand = async () => {
 const initializeGit = async () => {
 	const dir = projectDir + '/' + projectName;
 
-	if (initGit) {
-		await execa('git', ['init'], {
-			cwd: dir,
-			stderr: 'inherit',
-		});
-	}
+	await execa('git', ['init'], {
+		cwd: dir,
+		stderr: 'inherit',
+	});
 };
 
 const installDependencies = async () => {
@@ -367,9 +387,30 @@ const installDependencies = async () => {
 	);
 };
 
+const punText = chalkAnimation.rainbow('Million Dollar App Idea');
+
 console.clear();
 await entry();
 await askStack();
 await scaffoldProject();
-await initializeGit();
-await installDependencies();
+
+if (initGit) {
+	await initializeGit();
+}
+if (installDeps) {
+	await installDependencies();
+}
+
+console.log(`
+${chalk.green('✔ Application has been setup!')}
+
+Run the following commands to start on your ${punText}:
+
+${chalk.blue(`
+- cd ${projectDir + '/' + projectName}
+${!installDeps ? '- npm run install' : ''}
+- npm run dev
+`)}
+
+Good Luck!!
+`);
