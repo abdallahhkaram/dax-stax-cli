@@ -1,12 +1,13 @@
 {
   "name": "dax-stax",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "the dax tech stack cli",
   "main": "index.js",
   "type": "module",
   "author": "abdallah karam",
   "license": "MIT",
   "bin": "./index.js",
+  "repository": "https://github.com/abdallahhkaram/dax-stax-cli.git",
   "dependencies": {
     "chalk": "^5.2.0",
     "execa": "^6.1.0",
