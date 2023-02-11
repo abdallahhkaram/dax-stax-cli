@@ -8,6 +8,12 @@ import fs from 'fs-extra';
 import { execa } from 'execa';
 import ora from 'ora';
 import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const distPath = path.dirname(__filename);
+const PKG_ROOT = path.join(distPath, './');
+const srcDir = path.join(PKG_ROOT, 'template');
 
 let projectDir;
 let projectName;
@@ -259,7 +265,7 @@ const scaffoldProject = async () => {
 
 	spinner.start();
 
-	fs.copySync('./template', dir);
+	fs.copySync(srcDir, dir);
 	fs.renameSync(path.join(dir, '_gitignore'), path.join(dir, '.gitignore'));
 
 	const scaffoldedName =
