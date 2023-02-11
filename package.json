@@ -1,0 +1,19 @@
+{
+  "name": "dax-stax",
+  "version": "1.0.0",
+  "description": "the dax tech stack cli",
+  "main": "index.js",
+  "type": "module",
+  "author": "abdallah karam",
+  "license": "MIT",
+  "bin": "./index.js",
+  "dependencies": {
+    "chalk": "^5.2.0",
+    "execa": "^6.1.0",
+    "figlet": "^1.5.2",
+    "fs-extra": "^11.1.0",
+    "gradient-string": "^2.0.2",
+    "inquirer": "^9.1.4",
+    "ora": "^6.1.2"
+  }
+}
