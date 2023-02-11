@@ -87,7 +87,7 @@ async function askStack() {
 		.prompt({
 			name: 'version',
 			type: 'input',
-			default:"1.0.0"
+			default: '1.0.0',
 			message: 'What is your project version?',
 		})
 		.then((value) => {
@@ -118,7 +118,7 @@ async function askStack() {
 		.prompt({
 			name: 'license',
 			type: 'input',
-			default:"MIT",
+			default: 'MIT',
 			message: 'What is your project license?',
 		})
 		.then((value) => {
