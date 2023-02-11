@@ -1,12 +1,20 @@
 {
   "name": "dax-stax",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "the dax tech stack cli",
+  "keywords": [
+    "cli",
+    "abdallah karam",
+    "NexJS",
+    "tailwind"
+  ],
   "main": "index.js",
   "type": "module",
   "author": "abdallah karam",
   "license": "MIT",
-  "bin": "./index.js",
+  "bin": {
+    "init": "./index"
+  },
   "repository": "https://github.com/abdallahhkaram/dax-stax-cli.git",
   "dependencies": {
     "chalk": "^5.2.0",
