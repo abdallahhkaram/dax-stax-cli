@@ -1,28 +1,27 @@
 #!/usr/bin/env node
 
 import chalk from 'chalk';
-import chalkAnimation from 'chalk-animation';
 import figlet from 'figlet';
 import gradient from 'gradient-string';
 import inquirer from 'inquirer';
 import fs from 'fs-extra';
 import { execa } from 'execa';
 import ora from 'ora';
-import path from 'path';
+import * as path from 'path';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const distPath = path.dirname(__filename);
 const PKG_ROOT = path.join(distPath, './');
-const srcDir = path.join(PKG_ROOT, 'template');
+const srcDir = path.join(PKG_ROOT.toString().split('/dist')[0], 'template');
 
 const validationRegExp =
 	/^(?:@[a-z0-9-*~][a-z0-9-*._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/;
 
-const validateAppName = (input) => {
+const validateAppName = (input: string) => {
 	const paths = input.split('/');
 
-	const indexOfDelimiter = paths.findIndex((p) => p.startsWith('@'));
+	const indexOfDelimiter = paths.findIndex((p: any) => p.startsWith('@'));
 
 	let appName = paths[paths.length - 1];
 	if (paths.findIndex((p) => p.startsWith('@')) !== -1) {
@@ -36,15 +35,37 @@ const validateAppName = (input) => {
 	}
 };
 
-let projectDir;
-let projectName;
-let pkgManager;
-let installDeps = false;
-let initGit = false;
-let version;
-let license;
-let keywords;
-let description;
+interface ProjectTypes {
+	name: string;
+	dir: string;
+	pkgManager: string;
+	installDeps: boolean;
+	initGit: boolean;
+	version: string;
+	license: string;
+	keywords: string;
+	description: string;
+	getDir: () => string;
+	getKeywordsArr: () => Array<string>;
+}
+
+const project: ProjectTypes = {
+	name: '',
+	dir: '',
+	pkgManager: '',
+	installDeps: false,
+	initGit: false,
+	version: '',
+	license: '',
+	keywords: '',
+	description: '',
+	getDir() {
+		return this.dir + '/' + this.name;
+	},
+	getKeywordsArr() {
+		return this.keywords.split(' ');
+	},
+};
 
 const sleep = (ms = 200) => new Promise((r) => setTimeout(r, ms));
 
@@ -64,14 +85,14 @@ A cli tool to build your next Million Dollar Idea using ${chalk.bgRed(
 async function askStack() {
 	await inquirer
 		.prompt({
-			name: 'step_1',
+			name: 'name',
 			type: 'input',
 			default: 'app',
 			message: 'What is your project name:  ',
 			validate: validateAppName,
 		})
-		.then((value) => {
-			projectName = value.step_1;
+		.then((value: { name: string }) => {
+			project.name = value.name;
 		})
 		.catch(() => {
 			console.error(
@@ -81,13 +102,13 @@ async function askStack() {
 		});
 	await inquirer
 		.prompt({
-			name: 'step_2',
+			name: 'dir',
 			type: 'input',
 			default: '.',
 			message: 'What is your project directory:  ',
 		})
-		.then((value) => {
-			projectDir = value.step_2;
+		.then((value: { dir: string }) => {
+			project.dir = value.dir;
 		})
 		.catch(() => {
 			console.error(
@@ -102,8 +123,8 @@ async function askStack() {
 			type: 'input',
 			message: 'What is your project description: ',
 		})
-		.then((value) => {
-			description = value.description;
+		.then((value: { description: string }) => {
+			project.description = value.description;
 		})
 		.catch(() => {
 			console.error(
@@ -118,8 +139,8 @@ async function askStack() {
 			default: '1.0.0',
 			message: 'What is your project version:  ',
 		})
-		.then((value) => {
-			version = value.version;
+		.then((value: { version: string }) => {
+			project.version = value.version;
 		})
 		.catch(() => {
 			console.error(
@@ -133,8 +154,8 @@ async function askStack() {
 			type: 'input',
 			message: 'What is your project keywords (separate them with spaces):  ',
 		})
-		.then((value) => {
-			keywords = value.keywords;
+		.then((value: { keywords: string }) => {
+			project.keywords = value.keywords;
 		})
 		.catch(() => {
 			console.error(
@@ -149,8 +170,8 @@ async function askStack() {
 			default: 'MIT',
 			message: 'What is your project license:  ',
 		})
-		.then((value) => {
-			license = value.license;
+		.then((value: { license: string }) => {
+			project.license = value.license;
 		})
 		.catch(() => {
 			console.error(
@@ -165,8 +186,8 @@ async function askStack() {
 			type: 'confirm',
 			message: 'Do you want to initialize git:  ',
 		})
-		.then(async (value) => {
-			initGit = value.initGit;
+		.then(async (value: { initGit: boolean }) => {
+			project.initGit = value.initGit;
 		})
 		.catch(() => {
 			console.error(
@@ -180,8 +201,8 @@ async function askStack() {
 			type: 'confirm',
 			message: 'Do you want to install the dependencies:  ',
 		})
-		.then((value) => {
-			installDeps = value.installDeps;
+		.then((value: { installDeps: boolean }) => {
+			project.installDeps = value.installDeps;
 		})
 		.catch(() => {
 			console.error(
@@ -190,16 +211,16 @@ async function askStack() {
 			process.exit(1);
 		});
 
-	if (installDeps) {
+	if (project.installDeps) {
 		await inquirer
 			.prompt({
-				name: 'setPackageManager',
+				name: 'pkgManager',
 				type: 'list',
 				message: 'What is your preferred package manager:  ',
 				choices: ['npm', 'yarn', 'pnpm'],
 			})
-			.then((value) => {
-				pkgManager = value.setPackageManager;
+			.then((value: { pkgManager: string }) => {
+				project.pkgManager = value.pkgManager;
 			})
 			.catch(() => {
 				console.error(
@@ -211,16 +232,14 @@ async function askStack() {
 }
 
 const scaffoldProject = async () => {
-	const dir = projectDir + '/' + projectName;
+	const spinner = ora(`Scaffolding in: ${project.getDir()}...\n`).start();
 
-	const spinner = ora(`Scaffolding in: ${dir}...\n`).start();
-
-	if (fs.existsSync(dir)) {
-		if (fs.readdirSync(dir).length === 0) {
-			if (projectName !== '.')
+	if (fs.existsSync(project.getDir())) {
+		if (fs.readdirSync(project.getDir()).length === 0) {
+			if (project.name !== '.')
 				spinner.info(
 					`${chalk.cyan.bold(
-						projectName
+						project.name
 					)} exists but is empty, continuing...\n`
 				);
 		} else {
@@ -231,7 +250,7 @@ const scaffoldProject = async () => {
 				message: `${chalk.redBright.bold(
 					'Warning:'
 				)} ${chalk.cyan.bold(
-					projectName
+					project.name
 				)} already exists and isn't empty. How would you like to proceed?`,
 				choices: [
 					{
@@ -277,36 +296,43 @@ const scaffoldProject = async () => {
 			if (overwriteDir === 'clear') {
 				spinner.info(
 					`Emptying ${chalk.cyan.bold(
-						projectName
+						project.name
 					)} and creating dax-stax app..\n`
 				);
-				fs.emptyDirSync(dir);
+				fs.emptyDirSync(project.getDir());
 			}
 		}
 	}
 
 	spinner.start();
 
-	fs.copySync(srcDir, dir);
-	fs.renameSync(path.join(dir, '_gitignore'), path.join(dir, '.gitignore'));
+	fs.copySync(srcDir, project.getDir());
+	fs.renameSync(
+		path.join(project.getDir(), '_gitignore'),
+		path.join(project.getDir(), '.gitignore')
+	);
 
 	const scaffoldedName =
-		projectName === '.' ? 'App' : chalk.cyan.bold(projectName);
+		project.name === '.' ? 'App' : chalk.cyan.bold(project.name);
 
-	fs.readFile(dir + '/package.json', (err, data) => {
+	fs.readFile(project.getDir() + '/package.json', (err, data) => {
 		if (err) throw err;
 
-		let packageJsonObj = JSON.parse(data);
+		let packageJsonObj = JSON.parse(data.toString());
 
-		packageJsonObj.name = projectName;
-		packageJsonObj.description = description;
-		packageJsonObj.version = version;
-		packageJsonObj.keywords = keywords.split(' ');
-		packageJsonObj.license = license;
+		packageJsonObj.name = project.name;
+		packageJsonObj.description = project.description;
+		packageJsonObj.version = project.version;
+		packageJsonObj.keywords = project.getKeywordsArr();
+		packageJsonObj.license = project.license;
 		packageJsonObj = JSON.stringify(packageJsonObj);
-		fs.writeFile(dir + '/package.json', packageJsonObj, (err) => {
-			if (err) throw err;
-		});
+		fs.writeFile(
+			project.getDir() + '/package.json',
+			packageJsonObj,
+			(err: any) => {
+				if (err) throw err;
+			}
+		);
 	});
 
 	spinner.succeed(
@@ -315,24 +341,22 @@ const scaffoldProject = async () => {
 };
 
 const runInstallCommand = async () => {
-	const dir = projectDir + '/' + projectName;
-
-	switch (pkgManager) {
+	switch (project.pkgManager) {
 		case 'npm':
-			await execa(pkgManager, ['install'], {
-				cwd: dir,
+			await execa(project.pkgManager, ['install'], {
+				cwd: project.getDir(),
 				stderr: 'inherit',
 			});
 
 			return null;
 		case 'pnpm':
 			const pnpmSpinner = ora('Running pnpm install...').start();
-			const pnpmSubprocess = execa(pkgManager, ['install'], {
-				cwd: dir,
+			const pnpmSubprocess = execa(project.pkgManager, ['install'], {
+				cwd: project.getDir(),
 				stdout: 'pipe',
 			});
 
-			await new Promise((res, rej) => {
+			await new Promise<void>((res, rej) => {
 				pnpmSubprocess.stdout?.on('data', (data) => {
 					const text = data.toString();
 
@@ -349,12 +373,12 @@ const runInstallCommand = async () => {
 			return pnpmSpinner;
 		case 'yarn':
 			const yarnSpinner = ora('Running yarn...').start();
-			const yarnSubprocess = execa(pkgManager, [], {
-				cwd: dir,
+			const yarnSubprocess = execa(project.pkgManager, [], {
+				cwd: project.getDir(),
 				stdout: 'pipe',
 			});
 
-			await new Promise((res, rej) => {
+			await new Promise<void>((res, rej) => {
 				yarnSubprocess.stdout?.on('data', (data) => {
 					yarnSpinner.text = data.toString();
 				});
@@ -367,48 +391,93 @@ const runInstallCommand = async () => {
 };
 
 const initializeGit = async () => {
-	const dir = projectDir + '/' + projectName;
-
 	await execa('git', ['init'], {
-		cwd: dir,
+		cwd: project.getDir(),
 		stderr: 'inherit',
 	});
 };
 
 const installDependencies = async () => {
-	const dir = projectDir + '/' + projectName;
+	const installSpinner = await runInstallCommand();
 
-	const installSpinner = await runInstallCommand(pkgManager, dir);
-
-	// If the spinner was used to show the progress, use succeed method on it
-	// If not, use the succeed on a new spinner
 	(installSpinner || ora()).succeed(
 		chalk.green('Successfully installed dependencies!\n')
 	);
 };
 
-const punText = chalkAnimation.rainbow('Million Dollar App Idea');
+const updatePackages = async () => {
+	switch (project.pkgManager) {
+		case 'npm':
+			await execa(project.pkgManager, ['update'], {
+				cwd: project.getDir(),
+				stderr: 'inherit',
+			});
+
+			return null;
+		case 'pnpm':
+			const pnpmSpinner = ora('Running pnpm update...').start();
+			const pnpmSubprocess = execa(project.pkgManager, ['update'], {
+				cwd: project.getDir(),
+				stdout: 'pipe',
+			});
+
+			await new Promise<void>((res, rej) => {
+				pnpmSubprocess.stdout?.on('data', (data) => {
+					const text = data.toString();
+
+					if (text.includes('Progress')) {
+						pnpmSpinner.text = text.includes('|')
+							? text.split(' | ')[1] ?? ''
+							: text;
+					}
+				});
+				pnpmSubprocess.on('error', (e) => rej(e));
+				pnpmSubprocess.on('close', () => res());
+			});
+
+			return pnpmSpinner;
+		case 'yarn':
+			const yarnSpinner = ora('Running yarn...').start();
+			const yarnSubprocess = execa(project.pkgManager, [], {
+				cwd: project.getDir(),
+				stdout: 'pipe',
+			});
+
+			await new Promise<void>((res, rej) => {
+				yarnSubprocess.stdout?.on('data', (data) => {
+					yarnSpinner.text = data.toString();
+				});
+				yarnSubprocess.on('error', (e) => rej(e));
+				yarnSubprocess.on('close', () => res());
+			});
+
+			return yarnSpinner;
+	}
+};
 
 console.clear();
 await entry();
 await askStack();
 await scaffoldProject();
 
-if (initGit) {
+if (project.initGit) {
 	await initializeGit();
 }
-if (installDeps) {
+if (project.installDeps) {
 	await installDependencies();
+	await updatePackages();
 }
 
 console.log(`
 ${chalk.green('✔ Application has been setup!')}
 
-Run the following commands to start on your ${punText}:
+Run the following commands to start on your ${gradient.rainbow(
+	'Million Dollar Idea!'
+)}:
 
 ${chalk.blue(`
-- cd ${projectDir + '/' + projectName}
-${!installDeps ? '- npm run install' : ''}
+- cd ${project.getDir()}
+${!project.installDeps ? '- npm run install' : ''}
 - npm run dev
 `)}
 
