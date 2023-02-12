@@ -1,6 +1,6 @@
 {
   "name": "dax-stax",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "The dax tech stack cli to scaffold a NextJs-Tailwind app in seconds without any boilerplate.",
   "keywords": [
     "cli",
